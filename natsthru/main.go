@@ -174,8 +174,7 @@ func sendMsgs(nc *nats.Conn, subject string, size, window int) {
 
 		// Not aggressive here - slowly increase the outstanding
 		// msg window if the sub is keeping up.  We want to
-		// avoid the sawtooth pattern and have a smooth reading
-		// of max throughput.
+		// avoid the sawtooth pattern and keep the pipe always full.
 		if binary.LittleEndian.Uint64(msg.Data) == 0 {
 			w := atomic.LoadInt32(&wnd)
 			if w < 50*1024 {
@@ -215,6 +214,9 @@ func sendMsgs(nc *nats.Conn, subject string, size, window int) {
 				case <-waitChan:
 				case <-time.After(2 * time.Second):
 					log.Printf("Timeout waiting for receiver response.")
+					// Agressively shrink our window back down.
+					// TODO (cls) channel could have late entry, add request seqno.
+					atomic.StoreInt32(&wnd, int32(w/2))
 				}
 
 				outstanding = 0
