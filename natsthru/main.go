@@ -188,11 +188,11 @@ func sendMsgs(nc *nats.Conn, subject string, size, window int) {
 		fmt.Printf("couldn't subscribe: %v", err)
 	}
 
+	fmt.Printf("Window, Rate (msgs/sec), Rate (bytes/sec), Rate (readable)\n")
 	var requestInProgress bool
 	var i int
 	var outstanding int
-	start := time.Now()
-	lastPrint := time.Now()
+	ts := time.Now()
 	for {
 		nc.Publish(subject, payload)
 		i++
@@ -221,11 +221,12 @@ func sendMsgs(nc *nats.Conn, subject string, size, window int) {
 
 				outstanding = 0
 				requestInProgress = false
-				if time.Since(lastPrint) > time.Second*3 {
-					mps := float64(i) / time.Since(start).Seconds()
+				if time.Since(ts) > time.Second*3 {
+					mps := float64(i) / time.Since(ts).Seconds()
 					bps := int64(mps) * int64(size)
-					fmt.Printf("Window: %d, Rate: %d msgs/sec, %s bytes/sec\n", w, int(mps), ByteCountIEC(bps))
-					lastPrint = time.Now()
+					fmt.Printf("%d, %d, %d, %s\n", w, int(mps), bps, ByteCountIEC(bps))
+					ts = time.Now()
+					i = 0
 				}
 			}
 		}
