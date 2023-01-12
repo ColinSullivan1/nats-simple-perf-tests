@@ -44,6 +44,7 @@ func main() {
 	var tlsCACert = flag.String("tlscacert", "", "CA certificate to verify peer against")
 	var showHelp = flag.Bool("h", false, "Show help message")
 	var window = flag.Int("window", 1024, "Number of messages to window between requests")
+	var respTimeout = flag.Duration("timeout", time.Second*10, "Timeout for receiver response")
 
 	log.SetFlags(0)
 	flag.Usage = usage
@@ -90,12 +91,19 @@ func main() {
 	defer nc.Close()
 
 	log.Printf("Connected to server %s\n", nc.ConnectedServerName())
+
+	log.Printf("Action: %s\n", action)
+	log.Printf("Subject: %s\n", subj)
+	log.Printf("Initial Window: %d\n", window)
+	log.Printf("Response Timeout: %v\n", respTimeout)
+
 	if action == "send" {
 		size, err := strconv.Atoi(args[2])
 		if err != nil {
 			showUsageAndExit(1)
 		}
-		sendMsgs(nc, subj, size, *window)
+		log.Printf("Payload Size: %d\n", size)
+		sendMsgs(nc, subj, size, *window, *respTimeout)
 	} else if action == "recv" {
 		recvMsgs(nc, subj)
 	}
@@ -157,7 +165,7 @@ func ByteCountIEC(b int64) string {
 		float64(b)/float64(div), "KMGTPE"[exp])
 }
 
-func sendMsgs(nc *nats.Conn, subject string, size, window int) {
+func sendMsgs(nc *nats.Conn, subject string, size, window int, respTimeout time.Duration) {
 	payload := make([]byte, size)
 	inbox := nats.NewInbox()
 	waitChan := make(chan int)
@@ -212,11 +220,13 @@ func sendMsgs(nc *nats.Conn, subject string, size, window int) {
 			if outstanding > w {
 				select {
 				case <-waitChan:
-				case <-time.After(2 * time.Second):
+				case <-time.After(respTimeout):
 					log.Printf("Timeout waiting for receiver response.")
 					// Agressively shrink our window back down.
 					// TODO (cls) channel could have late entry, add request seqno.
-					atomic.StoreInt32(&wnd, int32(w/2))
+					if w > 4 {
+						atomic.StoreInt32(&wnd, int32(w/2))
+					}
 				}
 
 				outstanding = 0
