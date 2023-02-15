@@ -10,10 +10,35 @@ fi
 
 mkdir -p 2>/dev/null results
 
-MSGSZ=128
+MSGSZ=1024
+DUR=1m
+GOGC=off
 
-nats latency --server="nats://$1:4222" --server-b="$2:4223" --size $MSGSZ --rate 10     --duration 30s --histogram=results/$1_$2_512_10_30s
-nats latency --server="nats://$1:4222" --server-b="$2:4223" --size $MSGSZ --rate 100    --duration 30s --histogram=results/$1_$2_512_100_30s
-nats latency --server="nats://$1:4222" --server-b="$2:4223" --size $MSGSZ --rate 1000   --duration 30s --histogram=results/$1_$2_512_1000_30s
-nats latency --server="nats://$1:4222" --server-b="$2:4223" --size $MSGSZ --rate 10000  --duration 30s --histogram=results/$1_$2_512_10000_30s
-nats latency --server="nats://$1:4222" --server-b="$2:4223" --size $MSGSZ --rate 100000 --duration 30s --histogram=results/$1_$2_512_100000_30s
+echo "NATS Latency Test"
+echo "Hostname: `hostname`"
+echo "Server a: $1"
+echo "Server b: $2"
+echo ""
+echo "test1"
+sudo nice -n -20 ./nats latency --creds sys.creds --server="$1" --server-b="$2" --size $MSGSZ --rate 10     --duration $DUR --histogram=results/$1_$2_1024_10_$DUR
+echo ""
+echo "test2"
+sudo nice -n -20 ./nats latency --creds sys.creds --server="$1" --server-b="$2" --size $MSGSZ --rate 100    --duration $DUR --histogram=results/$1_$2_1024_100_$DUR
+echo ""
+echo "test3"
+sudo nice -n -20 ./nats latency --creds sys.creds --server="$1" --server-b="$2" --size $MSGSZ --rate 1000   --duration $DUR --histogram=results/$1_$2_1024_1000_$DUR
+echo ""
+echo "test4"
+sudo nice -n -20 ./nats latency --creds sys.creds --server="$1" --server-b="$2" --size $MSGSZ --rate 10000  --duration $DUR --histogram=results/$1_$2_1024_10000_$DUR
+echo ""
+echo "test5"
+sudo nice -n -20 ./nats latency --creds sys.creds --server="$1" --server-b="$2" --size $MSGSZ --rate 100000 --duration $DUR --histogram=results/$1_$2_1024_100000_$DUR
+echo ""
+echo "test6"
+sudo nice -n -20 ./nats latency  --creds sys.creds --server="$1" --server-b="$2" --size $MSGSZ --rate 350000 --duration $DUR --histogram=results/$1_$2_1024_350000_$DUR
+echo ""
+echo "test7"
+sudo nice -n -20 ./nats latency  --creds sys.creds --server="$1" --server-b="$2" --size $MSGSZ --rate 400000 --duration $DUR --histogram=results/$1_$2_1024_400000_$DUR
+echo "test8"
+sudo nice -n -20 ./nats latency  --creds sys.creds --server="$1" --server-b="$2" --size $MSGSZ --rate 800000 --duration $DUR --histogram=results/$1_$2_1024_800000_$DUR
+
